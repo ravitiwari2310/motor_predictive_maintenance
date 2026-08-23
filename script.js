@@ -2,7 +2,7 @@
    PMSM THERMAL DIGITAL TWIN — FRONTEND CONTROLLER
    ========================================================= */
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://motor-predictive-maintenance-b312.onrender.com';
 const HEALTH_ENDPOINT = `${API_BASE}/`;
 const PREDICT_ENDPOINT = `${API_BASE}/predict`;
 
