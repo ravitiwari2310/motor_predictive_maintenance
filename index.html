@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMSM Thermal Digital Twin — Drivetrain Monitor</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Chart.js time adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="cad-grid-overlay"></div>
+<div class="scanline"></div>
+
+<!-- ============ TOP COMMAND BAR ============ -->
+<header class="command-bar">
+  <div class="command-bar-inner">
+    <div class="brand-block">
+      <div class="brand-icon">
+        <i data-lucide="cpu"></i>
+      </div>
+      <div class="brand-text">
+        <h1>PMSM THERMAL DIGITAL TWIN</h1>
+        <span class="brand-sub">DRIVETRAIN MONITOR &mdash; REAL-TIME THERMAL INFERENCE ENGINE</span>
+      </div>
+    </div>
+
+    <div class="command-bar-right">
+      <div class="clock-block">
+        <span id="sim-clock" class="sim-clock">00:00:00</span>
+        <span class="sim-clock-label">SYSTEM TIME</span>
+      </div>
+
+      <div class="status-badge" id="api-status-badge" data-state="checking">
+        <span class="status-dot"></span>
+        <span class="status-text" id="api-status-text">CHECKING…</span>
+        <span class="status-endpoint">127.0.0.1:8000</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ MAIN GRID ============ -->
+<main class="main-grid">
+
+  <!-- ===== LEFT: INPUT CONTROL PANEL ===== -->
+  <section class="panel input-panel">
+    <div class="panel-header">
+      <i data-lucide="sliders-horizontal" class="panel-header-icon"></i>
+      <h2>INPUT CONTROL PANEL</h2>
+      <span class="panel-header-tag">TELEMETRY INJECTION</span>
+    </div>
+
+    <!-- Presets -->
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="normal">
+        <i data-lucide="gauge"></i>
+        <span>Normal Cruise</span>
+      </button>
+      <button class="preset-btn preset-amber" data-preset="highload">
+        <i data-lucide="zap"></i>
+        <span>High Torque Load</span>
+      </button>
+      <button class="preset-btn preset-red" data-preset="stress">
+        <i data-lucide="flame"></i>
+        <span>Thermal Stress Test</span>
+      </button>
+    </div>
+
+    <!-- Thermal Sensors Group -->
+    <div class="input-group">
+      <div class="input-group-title">
+        <i data-lucide="thermometer"></i> THERMAL SENSORS <span class="unit-tag">°C</span>
+      </div>
+
+      <div class="field-row" data-field="stator_winding">
+        <label>Stator Winding</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="0" max="200" step="0.1" value="65.5">
+          <input type="number" class="number-input" min="0" max="200" step="0.1" value="65.5">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="stator_tooth">
+        <label>Stator Tooth</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="0" max="200" step="0.1" value="60.2">
+          <input type="number" class="number-input" min="0" max="200" step="0.1" value="60.2">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="stator_yoke">
+        <label>Stator Yoke</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="0" max="200" step="0.1" value="55.1">
+          <input type="number" class="number-input" min="0" max="200" step="0.1" value="55.1">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="coolant">
+        <label>Coolant</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-20" max="150" step="0.1" value="30.0">
+          <input type="number" class="number-input" min="-20" max="150" step="0.1" value="30.0">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="pm">
+        <label>Permanent Magnet</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="0" max="200" step="0.1" value="58.4">
+          <input type="number" class="number-input" min="0" max="200" step="0.1" value="58.4">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="ambient">
+        <label>Ambient</label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-40" max="80" step="0.1" value="25.0">
+          <input type="number" class="number-input" min="-40" max="80" step="0.1" value="25.0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamics & Electrical Group -->
+    <div class="input-group">
+      <div class="input-group-title">
+        <i data-lucide="activity"></i> DYNAMICS &amp; ELECTRICAL
+      </div>
+
+      <div class="field-row" data-field="motor_speed">
+        <label>Motor Speed <span class="unit-tag">RPM</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-8000" max="8000" step="10" value="3000">
+          <input type="number" class="number-input" min="-8000" max="8000" step="10" value="3000">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="torque">
+        <label>Torque <span class="unit-tag">Nm</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-300" max="300" step="1" value="120">
+          <input type="number" class="number-input" min="-300" max="300" step="1" value="120">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="i_d">
+        <label>I<sub>d</sub> (Direct Current) <span class="unit-tag">A</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-300" max="300" step="1" value="-100">
+          <input type="number" class="number-input" min="-300" max="300" step="1" value="-100">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="i_q">
+        <label>I<sub>q</sub> (Quadrature Current) <span class="unit-tag">A</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-300" max="300" step="1" value="150">
+          <input type="number" class="number-input" min="-300" max="300" step="1" value="150">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="u_d">
+        <label>U<sub>d</sub> (Direct Voltage) <span class="unit-tag">V</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-200" max="200" step="1" value="-40">
+          <input type="number" class="number-input" min="-200" max="200" step="1" value="-40">
+        </div>
+      </div>
+
+      <div class="field-row" data-field="u_q">
+        <label>U<sub>q</sub> (Quadrature Voltage) <span class="unit-tag">V</span></label>
+        <div class="dual-control">
+          <input type="range" class="range-input" min="-200" max="200" step="1" value="80">
+          <input type="number" class="number-input" min="-200" max="200" step="1" value="80">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RIGHT: PREDICTIVE ANALYTICS HUD ===== -->
+  <section class="panel hud-panel">
+    <div class="panel-header">
+      <i data-lucide="radar" class="panel-header-icon"></i>
+      <h2>PREDICTIVE ANALYTICS HUD</h2>
+      <span class="panel-header-tag">+60s HORIZON FORECAST</span>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="status-banner" id="status-banner" data-state="normal">
+      <i data-lucide="shield-check" id="status-banner-icon"></i>
+      <div class="status-banner-text">
+        <span class="status-banner-label">THERMAL STATUS</span>
+        <span class="status-banner-value" id="status-banner-value">NORMAL</span>
+      </div>
+      <div class="anomaly-indicator" id="anomaly-indicator" data-active="false">
+        <i data-lucide="triangle-alert"></i>
+        <span id="anomaly-text">NO ANOMALY DETECTED</span>
+      </div>
+    </div>
+
+    <!-- Hero Cards -->
+    <div class="hero-cards">
+      <div class="hero-card">
+        <div class="hero-card-label"><i data-lucide="thermometer-sun"></i> CURRENT WINDING TEMP</div>
+        <div class="hero-value-wrap">
+          <span class="hero-value" id="current-temp-value">65.5</span>
+          <span class="hero-unit">°C</span>
+        </div>
+        <div class="hero-card-foot">Live sensor reading — stator_winding</div>
+      </div>
+
+      <div class="hero-card hero-card-predicted">
+        <div class="hero-card-label"><i data-lucide="brain-circuit"></i> PREDICTED WINDING TEMP <span class="horizon-tag">+60s</span></div>
+        <div class="hero-value-wrap">
+          <span class="hero-value" id="predicted-temp-value">70.5</span>
+          <span class="hero-unit">°C</span>
+        </div>
+        <div class="hero-card-foot">
+          <span class="delta-badge" id="delta-badge">
+            <i data-lucide="trending-up"></i>
+            <span id="delta-value">+4.96 °C</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run Button -->
+    <button class="run-btn" id="run-prediction-btn">
+      <i data-lucide="play-circle"></i>
+      <span>RUN PROJECTION SIMULATION</span>
+      <span class="run-btn-glow"></span>
+    </button>
+
+    <!-- Secondary Readouts -->
+    <div class="secondary-readouts" id="secondary-readouts">
+      <div class="readout-chip">
+        <span class="readout-label">CONFIDENCE</span>
+        <span class="readout-value" id="confidence-value">—</span>
+      </div>
+      <div class="readout-chip">
+        <span class="readout-label">MODEL LATENCY</span>
+        <span class="readout-value" id="latency-value">—</span>
+      </div>
+      <div class="readout-chip">
+        <span class="readout-label">RUN COUNT</span>
+        <span class="readout-value" id="run-count-value">0</span>
+      </div>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-panel-title"><i data-lucide="terminal"></i> INFERENCE LOG</div>
+      <div class="log-list" id="log-list">
+        <div class="log-entry log-entry-muted">Awaiting first projection run…</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ REAL-TIME CHART SECTION ============ -->
+<section class="panel chart-panel">
+  <div class="panel-header">
+    <i data-lucide="line-chart" class="panel-header-icon"></i>
+    <h2>REAL-TIME TELEMETRY &amp; PROJECTION HISTORY</h2>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-swatch legend-actual"></span>Actual Winding Temp</span>
+      <span class="legend-item"><span class="legend-swatch legend-predicted"></span>Predicted (+60s)</span>
+      <button class="clear-chart-btn" id="clear-chart-btn"><i data-lucide="eraser"></i> Clear</button>
+    </div>
+  </div>
+  <div class="chart-canvas-wrap">
+    <canvas id="thermal-chart"></canvas>
+  </div>
+</section>
+
+<footer class="app-footer">
+  <span>PMSM Thermal Digital Twin Engine · FastAPI Inference Backend · Chart.js Telemetry Renderer</span>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
